@@ -1,0 +1,18 @@
+name: Auto Restart Workflow
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"  # Every 30 minutes
+  workflow_dispatch:
+
+jobs:
+  restart:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install gh CLI
+        run: sudo apt install gh -y
+
+      - name: Trigger Main Workflow
+        run: gh workflow run main.yml --repo ${{ github.repository }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
