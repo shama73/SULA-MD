@@ -1,0 +1,25 @@
+  schedule:
+    - cron: '30 4 * * *'       # Consider clarifying timezone in a comment (UTC by default), or make it configurable
+
+      - name: Setup rclone config
+        run: |
+          mkdir -p ~/.config/rclone
+          echo "${{ secrets.RCLONE_CONFIG }}" > ~/.config/rclone/rclone.conf
+        # Using echo for secrets could expose sensitive data in logs if misconfigured; consider masking
+
+      - name: Create test file (for upload)
+        run: |
+          mkdir -p to-upload
+          echo "Uploaded at $(date)" > to-upload/example.txt
+        # This step is likely for testing only; consider removing or making optional
+
+      - name: Upload to Google Drive
+        run: |
+          rclone copy to-upload gdrive:/GitHubUploads --drive-chunk-size=64M -v
+        # Consider adding --transfers or --checkers flags to optimize large/batch uploads
+
+      - name: Start application with PM2
+        run: |
+          npm install -g pm2
+          pm2 start sula.js --deep-monitoring --attach --name SulaMd
+        # You may want to add a health check or error handling after startup
