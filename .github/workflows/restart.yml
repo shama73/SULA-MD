@@ -1,18 +1,35 @@
-name: Auto Restart Workflow
+name: Upload to Google Drive
 
 on:
-  schedule:
-    - cron: "*/30 * * * *"  # Every 30 minutes
+  push:
+    branches: [main]
   workflow_dispatch:
+  schedule:
+    - cron: "*/30 * * * *"
 
 jobs:
-  restart:
+  upload-to-drive:
     runs-on: ubuntu-latest
-    steps:
-      - name: Install gh CLI
-        run: sudo apt install gh -y
+    timeout-minutes: 5
 
-      - name: Trigger Main Workflow
-        run: gh workflow run main.yml --repo ${{ github.repository }}
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Install rclone
+        run: |
+          curl https://rclone.org/install.sh | sudo bash
+
+      - name: Setup rclone config
+        run: |
+          mkdir -p ~/.config/rclone
+          echo "${{ secrets.RCLONE_CONFIG }}" > ~/.config/rclone/rclone.conf
+
+      - name: Create test file (or your actual file)
+        run: |
+          mkdir -p to-upload
+          echo "Uploaded at $(date)" > to-upload/example.txt
+
+      - name: Upload to Google Drive
+        run: |
+          rclone copy to-upload remote-drive:/GitHubUploads --drive-chunk-size=64M -v
